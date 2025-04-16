@@ -18,3 +18,9 @@ a:link {
     padding: 8px;
     text-decoration: none;
 }
+a:visited {
+  color: white;
+}
+a:active {
+  color: white;
+}
