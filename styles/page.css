@@ -13,6 +13,10 @@ html {
 }
 a:link {
     background-color: var(--theme-color);
+    color: white;
+    border-radius: 8px;
+    padding: 8px;
+    text-decoration: none;
 }
 a:visited {
     color: var(--theme-color);
