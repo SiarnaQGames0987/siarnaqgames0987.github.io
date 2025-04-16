@@ -9,7 +9,7 @@ html {
 }
 ::selection {
   background-color: var(--theme-color);
-  color: black;
+  color: white;
 }
 a:link {
     background-color: var(--theme-color);
