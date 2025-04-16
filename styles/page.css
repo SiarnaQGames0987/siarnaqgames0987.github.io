@@ -12,7 +12,7 @@ html {
   color: black;
 }
 a:link {
-    backround-color: var(--theme-color);
+    background-color: var(--theme-color);
 }
 a:visited {
     color: var(--theme-color);
