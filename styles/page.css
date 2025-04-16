@@ -18,12 +18,3 @@ a:link {
     padding: 8px;
     text-decoration: none;
 }
-a:visited {
-    color: var(--theme-color);
-}
-a:hover {
-    color: var(--theme-color);
-}
-a:active {
-    color: var(--theme-color);
-}
