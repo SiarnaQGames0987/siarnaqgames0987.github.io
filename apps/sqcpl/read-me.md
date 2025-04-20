@@ -37,9 +37,13 @@ math = makes math operations.
 *Example SQCPL Code:
 
 print "Hello, WORLD!"?
+
 crint c = 80?
+
 crint y = 60?
+
 math m = c + y?
+
 print m?
 
 
