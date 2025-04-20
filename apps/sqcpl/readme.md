@@ -18,3 +18,25 @@ text = text. Max 14,000 characters.
 ! = comment line.
 !n = not equal.
 : = used to specify the command to execute.
+math = makes math operations.
+
+*Using:
+*Example SQCPL Code:
+
+print "Hello, WORLD!"?
+crint c = 80?
+crint y = 60?
+math m = c + y?
+print m?
+
+
+CONSOLE:
+
+Hello, WORLD!
+140
+
+
+
+*WARNING:
+
+When an "if" block has condition met, the else and elsif commands that connected on that "if" block, appears at console as "Unknown Command" but it not brokes their function.
