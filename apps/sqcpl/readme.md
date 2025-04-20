@@ -39,4 +39,4 @@ Hello, WORLD!
 
 *WARNING:
 
-When an "if" block has condition met, the else and elsif commands that connected on that "if" block, appears at console as "Unknown Command" but it not brokes their function.
+When an "if" block has condition met, the else and elsif commands that connected on that "if" block, appears at console as "Unknown Command" but it not brokes their function. And, when you try to close the application, it opens a more and then be closed.
