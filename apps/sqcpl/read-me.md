@@ -17,7 +17,7 @@ text = text. Max 14,000 characters.
 ? = end of a code statement.
 ! = comment line.
 !n = not equal.
-: = used to specify the command to execute.
+":" = used to specify the command to execute.
 math = makes math operations.
 
 *Using:
