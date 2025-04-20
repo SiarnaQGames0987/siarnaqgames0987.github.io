@@ -1,10 +1,10 @@
 # SQCPL(SiarnaQ's Custom Programming Language) Programming Language Readme:
 
-*1: Requirements:
+* 1: Requirements:
 Python Runtime 3.13
 
 
-*2: Syntax & Using:
+* 2: Syntax & Using:
 
 print = prints to console.
 
@@ -33,8 +33,8 @@ text = text. Max 14,000 characters.
 math = makes math operations.
 
 
-*Using:
-*Example SQCPL Code:
+* Using:
+* Example SQCPL Code:
 
 print "Hello, WORLD!"?
 
@@ -54,7 +54,7 @@ Hello, WORLD!
 
 
 
-*WARNING:
+* WARNING:
 
 When an "if" block has condition met, the else and elsif commands that connected on that "if" block, appears at console as "Unknown Command" but it not brokes their function. And, when you try to close the application, it opens one more and then be closed.
 
