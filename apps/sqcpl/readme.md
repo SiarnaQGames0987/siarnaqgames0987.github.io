@@ -1,4 +1,4 @@
-#SQCPL(SiarnaQ's Custom Programming Language) Programming Language Readme:
+# SQCPL(SiarnaQ's Custom Programming Language) Programming Language Readme:
 
 *1: Requirements:
 Python Runtime 3.13
