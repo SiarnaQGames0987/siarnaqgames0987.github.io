@@ -1,32 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>GNLTR 0 – Neural AI</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <meta charset="UTF-8">
+  <title>GNLTR 0 – Neural AI (True NN)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0"></script>
   <style>
     body {
       background-color: #0d1117;
-      color: #fff;
+      color: white;
       font-family: sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding-top: 100px;
     }
-
     #user-input {
       width: 400px;
       padding: 10px;
       font-size: 16px;
     }
-
     button {
       margin-left: 10px;
       padding: 10px 20px;
       font-weight: bold;
     }
-
     #response {
       margin-top: 30px;
       background-color: #161b22;
@@ -38,92 +35,75 @@
   </style>
 </head>
 <body>
-  <h1>GNLTR 0 – Neural AI</h1>
+  <h1>GNLTR 0 – Neural AI (True Model)</h1>
   <div>
-    <input type="text" id="user-input" placeholder="Try: Hello, or 5+5, or write C# code">
+    <input type="text" id="user-input" placeholder="Ask something...">
     <button onclick="respond()">Send</button>
   </div>
-  <div id="response">I’m ready.</div>
+  <div id="response">Training model...</div>
 
   <script>
-    // Eğitim verisi (komut → sınıf)
-    const trainingData = [
-      { input: "hi", output: [1, 0, 0] },        // selam
-      { input: "hello", output: [1, 0, 0] },
-      { input: "merhaba", output: [1, 0, 0] },
-      { input: "2+2", output: [0, 1, 0] },       // hesap
-      { input: "5*5", output: [0, 1, 0] },
-      { input: "10 / 2", output: [0, 1, 0] },
-      { input: "write c#", output: [0, 0, 1] },  // kod isteği
-      { input: "generate python code", output: [0, 0, 1] }
+    const samples = [
+      { input: "hello", output: 0 },
+      { input: "hi", output: 0 },
+      { input: "merhaba", output: 0 },
+      { input: "2+2", output: 1 },
+      { input: "5*3", output: 1 },
+      { input: "50/10", output: 1 },
+      { input: "write code", output: 2 },
+      { input: "generate c#", output: 2 },
+      { input: "python code", output: 2 }
     ];
 
-    function tokenize(text) {
-      text = text.toLowerCase();
-      return [
-        text.includes("hi") || text.includes("hello") || text.includes("merhaba") ? 1 : 0,
-        /\d+\s*[\+\-\*\/]\s*\d+/.test(text) ? 1 : 0,
-        text.includes("code") || text.includes("c#") || text.includes("python") ? 1 : 0
-      ];
+    const labels = ["selam", "hesap", "engelle"];
+
+    const words = ["hello", "hi", "merhaba", "write", "code", "generate", "python", "c#", "+", "-", "*", "/"];
+
+    function encodeText(text) {
+      const tokens = text.toLowerCase().split(/\W+/);
+      return words.map(w => tokens.includes(w) ? 1 : 0);
     }
+
+    const xs = tf.tensor2d(samples.map(s => encodeText(s.input)));
+    const ys = tf.oneHot(tf.tensor1d(samples.map(s => s.output), 'int32'), 3);
 
     const model = tf.sequential();
-    model.add(tf.layers.dense({ inputShape: [3], units: 8, activation: 'relu' }));
+    model.add(tf.layers.dense({ inputShape: [words.length], units: 8, activation: 'relu' }));
     model.add(tf.layers.dense({ units: 3, activation: 'softmax' }));
 
-    model.compile({
-      optimizer: 'adam',
-      loss: 'categoricalCrossentropy',
-      metrics: ['accuracy']
-    });
+    model.compile({ optimizer: 'adam', loss: 'categoricalCrossentropy', metrics: ['accuracy'] });
 
-    async function train() {
-      const xs = tf.tensor2d(trainingData.map(d => tokenize(d.input)));
-      const ys = tf.tensor2d(trainingData.map(d => d.output));
-      await model.fit(xs, ys, { epochs: 150 });
+    async function trainModel() {
+      await model.fit(xs, ys, { epochs: 100 });
+      document.getElementById("response").innerText = "Model trained. You can talk now!";
     }
+
+    trainModel();
 
     async function respond() {
       const input = document.getElementById("user-input").value;
-      const responseBox = document.getElementById("response");
-      const inputTensor = tf.tensor2d([tokenize(input)]);
-      const prediction = model.predict(inputTensor);
-      const result = await prediction.array();
-      const index = result[0].indexOf(Math.max(...result[0]));
+      const encoded = tf.tensor2d([encodeText(input)]);
+      const prediction = model.predict(encoded);
+      const outputIndex = (await prediction.argMax(1).data())[0];
+      let response = "";
 
-      // 0: hesap, 1: selam, 2: kod
-      if (index === 1) {
-        responseBox.innerText = "Hello! I’m GNLTR 0 😊";
-      } else if (index === 0) {
+      if (outputIndex === 0) {
+        response = "Hello! I am GNLTR 0!";
+      } else if (outputIndex === 1) {
         try {
-          const match = input.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
-          if (match) {
-            const a = parseFloat(match[1]);
-            const b = parseFloat(match[3]);
-            const op = match[2];
-            let result;
-            switch(op) {
-              case "+": result = a + b; break;
-              case "-": result = a - b; break;
-              case "*": result = a * b; break;
-              case "/": result = b !== 0 ? a / b : "Infinity"; break;
-              default: result = "Unknown operation";
-            }
-            responseBox.innerText = `${a} ${op} ${b} = ${result}`;
-          } else {
-            responseBox.innerText = "I detected math but couldn't parse the numbers.";
-          }
+          const result = eval(input);
+          response = `${input} = ${result}`;
         } catch {
-          responseBox.innerText = "Math error.";
+          response = "I detected a calculation but couldn't process it.";
         }
-      } else if (index === 2) {
-        responseBox.innerText = "Sorry, I'm not allowed to generate code.";
+      } else if (outputIndex === 2) {
+        response = "Sorry, I can't generate code.";
       } else {
-        responseBox.innerText = "I'm not sure what you mean!";
+        response = "I don't understand that.";
       }
-    }
 
-    train();
+      document.getElementById("response").innerText = response;
+    }
   </script>
 </body>
 </html>
