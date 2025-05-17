@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GNLTR 0 – Neural AI (Full Dataset)</title>
+  <title>GNLTR 0 – Neural AI (1000 Kelimelik Model)</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0"></script>
   <style>
     body {
@@ -43,30 +43,50 @@
   <div id="response">Model yükleniyor...</div>
 
   <script>
+    // Gömülü eğitim verisi (örnek, kısa haliyle)
+    const trainingData = [
+      { input: "merhaba", output: 0 },
+      { input: "hello", output: 0 },
+      { input: "hi", output: 0 },
+      { input: "calculate", output: 1 },
+      { input: "5+5", output: 1 },
+      { input: "code", output: 2 },
+      { input: "python", output: 2 },
+      { input: "happy", output: 3 },
+      { input: "üzgün", output: 3 },
+      { input: "apple", output: 4 },
+      { input: "ev", output: 4 },
+      { input: "run", output: 5 },
+      { input: "yüzmek", output: 5 }
+    ];
+
+    const responses = [
+      "Selam! Ben GNLTR 0 😄",
+      "Bu bir matematik işlemi olabilir... ama tam anlamadım.",
+      "Üzgünüm, kod yazamam.",
+      "Bu bir duygu ifadesi olabilir!",
+      "Sanırım bir nesne söyledin.",
+      "Bu bir eylem gibi görünüyor."
+    ];
+
     let model;
     let wordList = [];
-    let trainingData = [];
 
-    async function loadDataAndTrain() {
-      const res = await fetch("gnltr0_training_data.json");
-      const data = await res.json();
-
-      trainingData = data;
-
-      // Tüm kelimeleri topla
+    async function trainModel() {
+      // kelime listesi oluştur
       const wordSet = new Set();
-      data.forEach(item => wordSet.add(item.input.toLowerCase()));
+      trainingData.forEach(d => wordSet.add(d.input.toLowerCase()));
       wordList = Array.from(wordSet);
 
-      const xs = tf.tensor2d(data.map(d => encode(d.input)));
-      const ys = tf.oneHot(tf.tensor1d(data.map(d => d.output), 'int32'), 6);
+      const xs = tf.tensor2d(trainingData.map(d => encode(d.input)));
+      const ys = tf.oneHot(tf.tensor1d(trainingData.map(d => d.output), 'int32'), 6);
 
       model = tf.sequential();
-      model.add(tf.layers.dense({ inputShape: [wordList.length], units: 64, activation: 'relu' }));
+      model.add(tf.layers.dense({ inputShape: [wordList.length], units: 32, activation: 'relu' }));
       model.add(tf.layers.dense({ units: 6, activation: 'softmax' }));
 
       model.compile({ optimizer: 'adam', loss: 'categoricalCrossentropy', metrics: ['accuracy'] });
-      await model.fit(xs, ys, { epochs: 50 });
+      await model.fit(xs, ys, { epochs: 20 });
 
       document.getElementById("response").innerText = "Model hazır! Mesaj yazabilirsin.";
     }
@@ -81,20 +101,10 @@
       const encoded = tf.tensor2d([encode(input)]);
       const prediction = await model.predict(encoded);
       const outputIndex = prediction.argMax(1).dataSync()[0];
-
-      const responses = [
-        "Selam! Ben GNLTR 0 😄",
-        "Bu bir matematik işlemi olabilir... ama tam anlamadım.",
-        "Üzgünüm, kod yazamam.",
-        "Bu bir duygu ifadesi olabilir!",
-        "Sanırım bir nesne söyledin.",
-        "Bu bir eylem gibi görünüyor."
-      ];
-
       document.getElementById("response").innerText = responses[outputIndex] || "Anlayamadım...";
     }
 
-    loadDataAndTrain();
+    trainModel();
   </script>
 </body>
 </html>
