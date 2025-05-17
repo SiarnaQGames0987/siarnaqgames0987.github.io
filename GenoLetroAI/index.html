@@ -2,128 +2,135 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GNLTR 0 - Geno-Letro AI</title>
+  <title>GNLTR 0 – Neural Network AI</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0/dist/tf.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
       background-color: #0d1117;
-      color: #ffffff;
+      color: white;
+      font-family: sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding-top: 100px;
     }
 
-    h1 {
-      color: #00ffd5;
-      margin-bottom: 30px;
-    }
-
-    #input-container {
-      display: flex;
-      gap: 10px;
-    }
-
     #user-input {
       width: 400px;
       padding: 10px;
-      border-radius: 5px;
-      border: none;
       font-size: 16px;
     }
 
-    #send-button {
+    button {
+      margin-left: 10px;
       padding: 10px 20px;
-      background-color: #00ffd5;
-      color: #000;
-      border: none;
-      border-radius: 5px;
       font-weight: bold;
       cursor: pointer;
     }
 
-    #send-button:hover {
-      background-color: #00cbb0;
-    }
-
-    #response-box {
+    #response {
       margin-top: 30px;
-      padding: 15px;
       background-color: #161b22;
+      padding: 15px;
       border-radius: 5px;
       width: 500px;
-      min-height: 50px;
       text-align: left;
-      white-space: pre-line;
     }
   </style>
 </head>
 <body>
-  <h1>You can ask everything</h1>
-
-  <div id="input-container">
-    <input type="text" id="user-input" placeholder="Type your question..." />
-    <button id="send-button">Send</button>
+  <h1>GNLTR 0 Neural AI</h1>
+  <div>
+    <input type="text" id="user-input" placeholder="Example: calculate 5 + 3">
+    <button onclick="respond()">Send</button>
   </div>
-
-  <div id="response-box"></div>
+  <div id="response">Waiting for input...</div>
 
   <script>
-    // Dil algılayıcı
-    function detectLanguage(text) {
-      const turkish = /merhaba|nasılsın|kaç|nedir|çarp|böl|artı|eksi/i;
-      const english = /hello|what|how|is|convert|multiply/i;
+    // Eğitim verisi: Komut → Kategori
+    const trainingData = [
+      { input: "add", output: [1, 0, 0] },
+      { input: "plus", output: [1, 0, 0] },
+      { input: "sum", output: [1, 0, 0] },
+      { input: "multiply", output: [0, 1, 0] },
+      { input: "times", output: [0, 1, 0] },
+      { input: "product", output: [0, 1, 0] },
+      { input: "convert", output: [0, 0, 1] },
+      { input: "binary", output: [0, 0, 1] },
+      { input: "hex", output: [0, 0, 1] },
+    ];
 
-      if (turkish.test(text)) return "tr";
-      else if (english.test(text)) return "en";
-      else return "en"; // varsayılan
+    // Metni sayıya çevirme (çok basit tokenization)
+    function textToVector(text) {
+      const inputVector = [0, 0, 0]; // [add, multiply, convert]
+      if (text.includes("add") || text.includes("plus") || text.includes("sum")) inputVector[0] = 1;
+      if (text.includes("multiply") || text.includes("times") || text.includes("product")) inputVector[1] = 1;
+      if (text.includes("convert") || text.includes("binary") || text.includes("hex")) inputVector[2] = 1;
+      return tf.tensor2d([inputVector]);
     }
 
-    // GNLTR 0 motoru
-    function gnltr0Response(input) {
-      const lang = detectLanguage(input);
-      let output = "";
+    // Sinir ağı oluştur
+    const model = tf.sequential();
+    model.add(tf.layers.dense({ inputShape: [3], units: 5, activation: 'relu' }));
+    model.add(tf.layers.dense({ units: 3, activation: 'softmax' }));
 
-      try {
-        // Matematiksel işlemler
-        if (/[\d+\-*/().^]/.test(input)) {
-          const result = eval(input.replace("^", "**"));
-          output = (lang === "tr") ? `Sonuç: ${result}` : `Result: ${result}`;
-        }
-
-        // Sayı tabanı dönüştürme
-        else if (/convert.*(binary|hex|decimal|octal)/i.test(input) || /onluk|ikilik|onaltılık/i.test(input)) {
-          const match = input.match(/\d+/);
-          const number = parseInt(match ? match[0] : "0");
-
-          output = (lang === "tr")
-            ? `İkilik: ${number.toString(2)}\nSekizlik: ${number.toString(8)}\nOnluk: ${number.toString(10)}\nOnaltılık: ${number.toString(16).toUpperCase()}`
-            : `Binary: ${number.toString(2)}\nOctal: ${number.toString(8)}\nDecimal: ${number.toString(10)}\nHex: ${number.toString(16).toUpperCase()}`;
-        }
-
-        // Sohbet tarzı
-        else if (/merhaba|hello/i.test(input)) {
-          output = (lang === "tr") ? "Merhaba! Sana nasıl yardımcı olabilirim?" : "Hello! How can I assist you?";
-        }
-
-        // Bilinmeyen giriş
-        else {
-          output = (lang === "tr")
-            ? "Bu konuda eğitilmedim ama yakında öğreneceğim."
-            : "I'm not trained on this yet, but I will learn soon!";
-        }
-      } catch (e) {
-        output = (lang === "tr") ? "Hesaplama hatası oluştu." : "An error occurred during calculation.";
-      }
-
-      return output;
-    }
-
-    document.getElementById("send-button").addEventListener("click", () => {
-      const input = document.getElementById("user-input").value;
-      const response = gnltr0Response(input);
-      document.getElementById("response-box").textContent = response;
+    model.compile({
+      optimizer: 'adam',
+      loss: 'categoricalCrossentropy',
+      metrics: ['accuracy']
     });
+
+    async function trainModel() {
+      const xs = tf.tensor2d(trainingData.map(d => textToVector(d.input).arraySync()[0]));
+      const ys = tf.tensor2d(trainingData.map(d => d.output));
+      await model.fit(xs, ys, {
+        epochs: 100,
+        shuffle: true
+      });
+    }
+
+    async function respond() {
+      const input = document.getElementById("user-input").value.toLowerCase();
+      const vector = textToVector(input);
+      const prediction = model.predict(vector);
+      const result = await prediction.array();
+
+      const idx = result[0].indexOf(Math.max(...result[0]));
+      const responseBox = document.getElementById("response");
+
+      if (idx === 0) {
+        const match = input.match(/(\d+)\s*[\+]\s*(\d+)/);
+        if (match) {
+          const a = parseInt(match[1]);
+          const b = parseInt(match[2]);
+          responseBox.innerText = `${a} + ${b} = ${a + b}`;
+        } else {
+          responseBox.innerText = "Addition command detected, but numbers not found.";
+        }
+      } else if (idx === 1) {
+        const match = input.match(/(\d+)\s*[\*xX]\s*(\d+)/);
+        if (match) {
+          const a = parseInt(match[1]);
+          const b = parseInt(match[2]);
+          responseBox.innerText = `${a} × ${b} = ${a * b}`;
+        } else {
+          responseBox.innerText = "Multiplication detected, but numbers missing.";
+        }
+      } else if (idx === 2) {
+        const match = input.match(/(\d+)/);
+        if (match) {
+          const number = parseInt(match[1]);
+          responseBox.innerText = `Binary: ${number.toString(2)}\nHex: ${number.toString(16).toUpperCase()}`;
+        } else {
+          responseBox.innerText = "No number found to convert.";
+        }
+      } else {
+        responseBox.innerText = "Sorry, I couldn’t understand that.";
+      }
+    }
+
+    // Eğitim başlat
+    trainModel();
   </script>
 </body>
 </html>
