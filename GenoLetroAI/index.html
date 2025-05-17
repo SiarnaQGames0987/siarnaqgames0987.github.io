@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>GNLTR 0 – Neural Network AI</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0/dist/tf.min.js"></script>
+  <meta charset="UTF-8" />
+  <title>GNLTR 0 – Neural AI</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <style>
     body {
       background-color: #0d1117;
-      color: white;
+      color: #fff;
       font-family: sans-serif;
       display: flex;
       flex-direction: column;
@@ -25,7 +25,6 @@
       margin-left: 10px;
       padding: 10px 20px;
       font-weight: bold;
-      cursor: pointer;
     }
 
     #response {
@@ -34,44 +33,42 @@
       padding: 15px;
       border-radius: 5px;
       width: 500px;
-      text-align: left;
+      white-space: pre-line;
     }
   </style>
 </head>
 <body>
-  <h1>GNLTR 0 Neural AI</h1>
+  <h1>GNLTR 0 – Neural AI</h1>
   <div>
-    <input type="text" id="user-input" placeholder="Example: calculate 5 + 3">
+    <input type="text" id="user-input" placeholder="Try: Hello, or 5+5, or write C# code">
     <button onclick="respond()">Send</button>
   </div>
-  <div id="response">Waiting for input...</div>
+  <div id="response">I’m ready.</div>
 
   <script>
-    // Eğitim verisi: Komut → Kategori
+    // Eğitim verisi (komut → sınıf)
     const trainingData = [
-      { input: "add", output: [1, 0, 0] },
-      { input: "plus", output: [1, 0, 0] },
-      { input: "sum", output: [1, 0, 0] },
-      { input: "multiply", output: [0, 1, 0] },
-      { input: "times", output: [0, 1, 0] },
-      { input: "product", output: [0, 1, 0] },
-      { input: "convert", output: [0, 0, 1] },
-      { input: "binary", output: [0, 0, 1] },
-      { input: "hex", output: [0, 0, 1] },
+      { input: "hi", output: [1, 0, 0] },        // selam
+      { input: "hello", output: [1, 0, 0] },
+      { input: "merhaba", output: [1, 0, 0] },
+      { input: "2+2", output: [0, 1, 0] },       // hesap
+      { input: "5*5", output: [0, 1, 0] },
+      { input: "10 / 2", output: [0, 1, 0] },
+      { input: "write c#", output: [0, 0, 1] },  // kod isteği
+      { input: "generate python code", output: [0, 0, 1] }
     ];
 
-    // Metni sayıya çevirme (çok basit tokenization)
-    function textToVector(text) {
-      const inputVector = [0, 0, 0]; // [add, multiply, convert]
-      if (text.includes("add") || text.includes("plus") || text.includes("sum")) inputVector[0] = 1;
-      if (text.includes("multiply") || text.includes("times") || text.includes("product")) inputVector[1] = 1;
-      if (text.includes("convert") || text.includes("binary") || text.includes("hex")) inputVector[2] = 1;
-      return tf.tensor2d([inputVector]);
+    function tokenize(text) {
+      text = text.toLowerCase();
+      return [
+        text.includes("hi") || text.includes("hello") || text.includes("merhaba") ? 1 : 0,
+        /\d+\s*[\+\-\*\/]\s*\d+/.test(text) ? 1 : 0,
+        text.includes("code") || text.includes("c#") || text.includes("python") ? 1 : 0
+      ];
     }
 
-    // Sinir ağı oluştur
     const model = tf.sequential();
-    model.add(tf.layers.dense({ inputShape: [3], units: 5, activation: 'relu' }));
+    model.add(tf.layers.dense({ inputShape: [3], units: 8, activation: 'relu' }));
     model.add(tf.layers.dense({ units: 3, activation: 'softmax' }));
 
     model.compile({
@@ -80,57 +77,53 @@
       metrics: ['accuracy']
     });
 
-    async function trainModel() {
-      const xs = tf.tensor2d(trainingData.map(d => textToVector(d.input).arraySync()[0]));
+    async function train() {
+      const xs = tf.tensor2d(trainingData.map(d => tokenize(d.input)));
       const ys = tf.tensor2d(trainingData.map(d => d.output));
-      await model.fit(xs, ys, {
-        epochs: 100,
-        shuffle: true
-      });
+      await model.fit(xs, ys, { epochs: 150 });
     }
 
     async function respond() {
-      const input = document.getElementById("user-input").value.toLowerCase();
-      const vector = textToVector(input);
-      const prediction = model.predict(vector);
-      const result = await prediction.array();
-
-      const idx = result[0].indexOf(Math.max(...result[0]));
+      const input = document.getElementById("user-input").value;
       const responseBox = document.getElementById("response");
+      const inputTensor = tf.tensor2d([tokenize(input)]);
+      const prediction = model.predict(inputTensor);
+      const result = await prediction.array();
+      const index = result[0].indexOf(Math.max(...result[0]));
 
-      if (idx === 0) {
-        const match = input.match(/(\d+)\s*[\+]\s*(\d+)/);
-        if (match) {
-          const a = parseInt(match[1]);
-          const b = parseInt(match[2]);
-          responseBox.innerText = `${a} + ${b} = ${a + b}`;
-        } else {
-          responseBox.innerText = "Addition command detected, but numbers not found.";
+      // 0: hesap, 1: selam, 2: kod
+      if (index === 1) {
+        responseBox.innerText = "Hello! I’m GNLTR 0 😊";
+      } else if (index === 0) {
+        try {
+          const match = input.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
+          if (match) {
+            const a = parseFloat(match[1]);
+            const b = parseFloat(match[3]);
+            const op = match[2];
+            let result;
+            switch(op) {
+              case "+": result = a + b; break;
+              case "-": result = a - b; break;
+              case "*": result = a * b; break;
+              case "/": result = b !== 0 ? a / b : "Infinity"; break;
+              default: result = "Unknown operation";
+            }
+            responseBox.innerText = `${a} ${op} ${b} = ${result}`;
+          } else {
+            responseBox.innerText = "I detected math but couldn't parse the numbers.";
+          }
+        } catch {
+          responseBox.innerText = "Math error.";
         }
-      } else if (idx === 1) {
-        const match = input.match(/(\d+)\s*[\*xX]\s*(\d+)/);
-        if (match) {
-          const a = parseInt(match[1]);
-          const b = parseInt(match[2]);
-          responseBox.innerText = `${a} × ${b} = ${a * b}`;
-        } else {
-          responseBox.innerText = "Multiplication detected, but numbers missing.";
-        }
-      } else if (idx === 2) {
-        const match = input.match(/(\d+)/);
-        if (match) {
-          const number = parseInt(match[1]);
-          responseBox.innerText = `Binary: ${number.toString(2)}\nHex: ${number.toString(16).toUpperCase()}`;
-        } else {
-          responseBox.innerText = "No number found to convert.";
-        }
+      } else if (index === 2) {
+        responseBox.innerText = "Sorry, I'm not allowed to generate code.";
       } else {
-        responseBox.innerText = "Sorry, I couldn’t understand that.";
+        responseBox.innerText = "I'm not sure what you mean!";
       }
     }
 
-    // Eğitim başlat
-    trainModel();
+    train();
   </script>
 </body>
 </html>
