@@ -54,6 +54,7 @@
       width: 500px;
       min-height: 50px;
       text-align: left;
+      white-space: pre-line;
     }
   </style>
 </head>
@@ -68,46 +69,51 @@
   <div id="response-box"></div>
 
   <script>
-    // Basit dil algılayıcı (çok sınırlı)
+    // Dil algılayıcı
     function detectLanguage(text) {
-      const turkish = /merhaba|nasılsın|kaç|nedir/i;
-      const english = /hello|what|how|is|convert/i;
+      const turkish = /merhaba|nasılsın|kaç|nedir|çarp|böl|artı|eksi/i;
+      const english = /hello|what|how|is|convert|multiply/i;
 
       if (turkish.test(text)) return "tr";
       else if (english.test(text)) return "en";
       else return "en"; // varsayılan
     }
 
-    // Basit cevap üretici (GNLTR 0)
+    // GNLTR 0 motoru
     function gnltr0Response(input) {
       const lang = detectLanguage(input);
       let output = "";
 
       try {
-        // Matematik işlemleri
+        // Matematiksel işlemler
         if (/[\d+\-*/().^]/.test(input)) {
           const result = eval(input.replace("^", "**"));
           output = (lang === "tr") ? `Sonuç: ${result}` : `Result: ${result}`;
         }
 
-        // Sayı tabanı dönüşümleri
-        else if (/convert.*(binary|hex|decimal|octal)/i.test(input)) {
+        // Sayı tabanı dönüştürme
+        else if (/convert.*(binary|hex|decimal|octal)/i.test(input) || /onluk|ikilik|onaltılık/i.test(input)) {
           const match = input.match(/\d+/);
           const number = parseInt(match ? match[0] : "0");
 
           output = (lang === "tr")
-            ? `İkilik: ${number.toString(2)} | Sekizlik: ${number.toString(8)} | Onluk: ${number.toString(10)} | Onaltılık: ${number.toString(16).toUpperCase()}`
-            : `Binary: ${number.toString(2)} | Octal: ${number.toString(8)} | Decimal: ${number.toString(10)} | Hex: ${number.toString(16).toUpperCase()}`;
+            ? `İkilik: ${number.toString(2)}\nSekizlik: ${number.toString(8)}\nOnluk: ${number.toString(10)}\nOnaltılık: ${number.toString(16).toUpperCase()}`
+            : `Binary: ${number.toString(2)}\nOctal: ${number.toString(8)}\nDecimal: ${number.toString(10)}\nHex: ${number.toString(16).toUpperCase()}`;
         }
 
-        // Bilinmeyen komutlar
+        // Sohbet tarzı
+        else if (/merhaba|hello/i.test(input)) {
+          output = (lang === "tr") ? "Merhaba! Sana nasıl yardımcı olabilirim?" : "Hello! How can I assist you?";
+        }
+
+        // Bilinmeyen giriş
         else {
           output = (lang === "tr")
-            ? "Bu konuda eğitilmedim ama yakında öğreneceğim!"
-            : "I’m not trained on this yet, but I will learn soon!";
+            ? "Bu konuda eğitilmedim ama yakında öğreneceğim."
+            : "I'm not trained on this yet, but I will learn soon!";
         }
       } catch (e) {
-        output = (lang === "tr") ? "Hata oluştu." : "An error occurred.";
+        output = (lang === "tr") ? "Hesaplama hatası oluştu." : "An error occurred during calculation.";
       }
 
       return output;
