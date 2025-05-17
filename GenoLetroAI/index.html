@@ -1,66 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Geno-Letro AI</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #101820;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 100px;
-        }
+  <meta charset="UTF-8">
+  <title>GNLTR 0 - Geno-Letro AI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0d1117;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 100px;
+    }
 
-        h1 {
-            margin-bottom: 40px;
-            color: #00ffd5;
-        }
+    h1 {
+      color: #00ffd5;
+      margin-bottom: 30px;
+    }
 
-        #input-container {
-            display: flex;
-            gap: 10px;
-        }
+    #input-container {
+      display: flex;
+      gap: 10px;
+    }
 
-        #user-input {
-            width: 400px;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-        }
+    #user-input {
+      width: 400px;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
 
-        #send-button {
-            padding: 10px 20px;
-            background-color: #00ffd5;
-            color: #000000;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+    #send-button {
+      padding: 10px 20px;
+      background-color: #00ffd5;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
 
-        #send-button:hover {
-            background-color: #00cbb0;
-        }
-    </style>
+    #send-button:hover {
+      background-color: #00cbb0;
+    }
+
+    #response-box {
+      margin-top: 30px;
+      padding: 15px;
+      background-color: #161b22;
+      border-radius: 5px;
+      width: 500px;
+      min-height: 50px;
+      text-align: left;
+    }
+  </style>
 </head>
 <body>
-    <h1>You can ask everything</h1>
+  <h1>You can ask everything</h1>
 
-    <div id="input-container">
-        <input type="text" id="user-input" placeholder="Type your question..." />
-        <button id="send-button">Send</button>
-    </div>
+  <div id="input-container">
+    <input type="text" id="user-input" placeholder="Type your question..." />
+    <button id="send-button">Send</button>
+  </div>
 
-    <script>
-        document.getElementById("send-button").addEventListener("click", () => {
-            const userInput = document.getElementById("user-input").value;
-            alert("Gönderilen mesaj: " + userInput);
-            // Buraya ileride API çağrısı veya AI cevabı eklenecek
-        });
-    </script>
+  <div id="response-box"></div>
+
+  <script>
+    // GNLTR 0 modeli (kurallara dayalı yapay zeka simülasyonu)
+    function gnltr0Response(input) {
+      const question = input.toLowerCase();
+
+      if (question.includes("hello") || question.includes("hi") || question.includes("merhaba")) {
+        return "Hello! I'm GNLTR 0. How can I help you?";
+      } else if (question.includes("how are you")) {
+        return "I'm just a simple neural model, but I'm running fine!";
+      } else if (question.includes("what is your name")) {
+        return "My name is GNLTR 0, part of the Geno-Letro AI series.";
+      } else if (question.includes("bye") || question.includes("görüşürüz")) {
+        return "Goodbye! See you soon!";
+      } else {
+        return "I'm not trained to answer that yet, but I'm learning!";
+      }
+    }
+
+    // Event listener
+    document.getElementById("send-button").addEventListener("click", () => {
+      const input = document.getElementById("user-input").value;
+      const response = gnltr0Response(input);
+      document.getElementById("response-box").textContent = response;
+    });
+  </script>
 </body>
 </html>
