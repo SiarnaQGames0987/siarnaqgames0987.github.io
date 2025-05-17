@@ -68,24 +68,51 @@
   <div id="response-box"></div>
 
   <script>
-    // GNLTR 0 modeli (kurallara dayalı yapay zeka simülasyonu)
-    function gnltr0Response(input) {
-      const question = input.toLowerCase();
+    // Basit dil algılayıcı (çok sınırlı)
+    function detectLanguage(text) {
+      const turkish = /merhaba|nasılsın|kaç|nedir/i;
+      const english = /hello|what|how|is|convert/i;
 
-      if (question.includes("hello") || question.includes("hi") || question.includes("merhaba")) {
-        return "Hello! I'm GNLTR 0. How can I help you?";
-      } else if (question.includes("how are you")) {
-        return "I'm just a simple neural model, but I'm running fine!";
-      } else if (question.includes("what is your name")) {
-        return "My name is GNLTR 0, part of the Geno-Letro AI series.";
-      } else if (question.includes("bye") || question.includes("görüşürüz")) {
-        return "Goodbye! See you soon!";
-      } else {
-        return "I'm not trained to answer that yet, but I'm learning!";
-      }
+      if (turkish.test(text)) return "tr";
+      else if (english.test(text)) return "en";
+      else return "en"; // varsayılan
     }
 
-    // Event listener
+    // Basit cevap üretici (GNLTR 0)
+    function gnltr0Response(input) {
+      const lang = detectLanguage(input);
+      let output = "";
+
+      try {
+        // Matematik işlemleri
+        if (/[\d+\-*/().^]/.test(input)) {
+          const result = eval(input.replace("^", "**"));
+          output = (lang === "tr") ? `Sonuç: ${result}` : `Result: ${result}`;
+        }
+
+        // Sayı tabanı dönüşümleri
+        else if (/convert.*(binary|hex|decimal|octal)/i.test(input)) {
+          const match = input.match(/\d+/);
+          const number = parseInt(match ? match[0] : "0");
+
+          output = (lang === "tr")
+            ? `İkilik: ${number.toString(2)} | Sekizlik: ${number.toString(8)} | Onluk: ${number.toString(10)} | Onaltılık: ${number.toString(16).toUpperCase()}`
+            : `Binary: ${number.toString(2)} | Octal: ${number.toString(8)} | Decimal: ${number.toString(10)} | Hex: ${number.toString(16).toUpperCase()}`;
+        }
+
+        // Bilinmeyen komutlar
+        else {
+          output = (lang === "tr")
+            ? "Bu konuda eğitilmedim ama yakında öğreneceğim!"
+            : "I’m not trained on this yet, but I will learn soon!";
+        }
+      } catch (e) {
+        output = (lang === "tr") ? "Hata oluştu." : "An error occurred.";
+      }
+
+      return output;
+    }
+
     document.getElementById("send-button").addEventListener("click", () => {
       const input = document.getElementById("user-input").value;
       const response = gnltr0Response(input);
