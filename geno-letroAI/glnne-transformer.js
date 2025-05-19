@@ -43,6 +43,10 @@ export async function loadData() {
 }
 
 export function runGLNNE(text) {
+    const math = isMathExpression(text);
+  if (math) return math;
+
+  const tokens = tokenize(text);
   const tokens = tokenize(text);
   const inputVec = encodeInput(tokens);
 
@@ -56,6 +60,17 @@ export function runGLNNE(text) {
       bestAnswer = pair.output;
     }
   }
+  // glnne-transformer.js
+function isMathExpression(text) {
+  try {
+    const safe = text.replace(/[^0-9+\-*/(). ]/g, '');
+    const result = eval(safe);
+    return isFinite(result) ? `Sonuç: ${result}` : null;
+  } catch {
+    return null;
+  }
+}
+
 
   if (bestSim < 0.90) return "Bu konuda bir şey öğrenmedim.";
   return `${bestAnswer} (benzerlik: ${bestSim.toFixed(2)})`;
