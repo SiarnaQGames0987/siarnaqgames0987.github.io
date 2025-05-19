@@ -108,4 +108,15 @@ function runGLNNE(inputText) {
   const outVectors = transformer(tokens);
   return `Transformer sonucu: ${JSON.stringify(outVectors, null, 2)}`;
 }
+// ======== Vektörden Cevap Üret (decode) ========
+function decodeOutput(outputVectors) {
+  // İlk vektörün ilk birkaç elemanına göre örnek cevap üretelim
+  const avg = outputVectors[0].reduce((a, b) => a + b, 0) / outputVectors[0].length;
+
+  if (avg > 0.8) return "Harika, seninle konuşmak güzel!";
+  if (avg > 0.4) return "İyi gidiyoruz!";
+  if (avg > 0.1) return "Hımm, ilginç bir şey söyledin.";
+  return "Sanırım seni tam anlayamadım.";
+}
+
 
