@@ -53,14 +53,11 @@ export async function loadData() {
 }
 
 export function runGLNNE(text) {
-  const math = isMathExpression(text);
-  if (math) return math;
-
   const tokens = tokenize(text);
   const inputVec = encodeInput(tokens);
 
   let bestSim = -1;
-  let bestAnswer = "Bu konuda bir şey öğrenmedim.";
+  let bestAnswer = "";
 
   for (let pair of dialogue) {
     const sim = cosineSimilarity(inputVec, pair.vector);
@@ -69,6 +66,18 @@ export function runGLNNE(text) {
       bestAnswer = pair.output;
     }
   }
+
+  const responseParts = [];
+
+  if (bestSim >= 0.85) responseParts.push(bestAnswer);
+
+  const math = isMathExpression(text);
+  if (math) responseParts.push(math);
+
+  return responseParts.length > 0
+    ? responseParts.join(" Ayrıca ")
+    : "Bu konuda bir şey öğrenmedim.";
+}
 
   // Eşik kontrolü (daha doğru eşleşme)
   if (bestSim < 0.85) return "Bu konuda bir şey öğrenmedim.";
