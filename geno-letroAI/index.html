@@ -44,21 +44,19 @@
   <div id="chat"></div>
 
   <script src="glnne-transformer.js"></script>
-  <script>
-    function handleSend() {
-      const input = document.getElementById("userInput").value.trim();
-      if (!input) return;
+  <script type="module">
+  import { loadData, runGLNNE } from './glnne-transformer.js';
 
-      const chatBox = document.getElementById("chat");
-      chatBox.innerHTML += `👤 Sen: ${input}\n`;
+  await loadData();
 
-      const output = runGLNNE(input);
-      chatBox.innerHTML += `🤖 GLNNE: ${output}\n\n`;
+  window.handleSend = () => {
+    const input = document.getElementById("userInput").value.trim();
+    const output = runGLNNE(input);
+    document.getElementById("chat").innerText += `👤 Sen: ${input}\n🤖 GLNNE: ${output}\n\n`;
+    document.getElementById("userInput").value = "";
+  };
+</script>
 
-      document.getElementById("userInput").value = "";
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-  </script>
 
 </body>
 </html>
