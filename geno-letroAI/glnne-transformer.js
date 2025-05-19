@@ -30,6 +30,16 @@ function encodeInput(tokens) {
   return averageVector(vecs);
 }
 
+function isMathExpression(text) {
+  try {
+    const safe = text.replace(/[^0-9+\-*/(). ]/g, '');
+    const result = eval(safe);
+    return isFinite(result) ? `Sonuç: ${result}` : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadData() {
   embeddings = await fetch('./embeddings.json').then(res => res.json());
   const raw = await fetch('./sample_data/dialogue.json').then(res => res.json());
@@ -43,7 +53,7 @@ export async function loadData() {
 }
 
 export function runGLNNE(text) {
-    const math = isMathExpression(text);
+  const math = isMathExpression(text);
   if (math) return math;
 
   const tokens = tokenize(text);
@@ -59,17 +69,6 @@ export function runGLNNE(text) {
       bestAnswer = pair.output;
     }
   }
-  // glnne-transformer.js
-function isMathExpression(text) {
-  try {
-    const safe = text.replace(/[^0-9+\-*/(). ]/g, '');
-    const result = eval(safe);
-    return isFinite(result) ? `Sonuç: ${result}` : null;
-  } catch {
-    return null;
-  }
-}
-
 
   if (bestSim < 0.90) return "Bu konuda bir şey öğrenmedim.";
   return `${bestAnswer} (benzerlik: ${bestSim.toFixed(2)})`;
