@@ -106,8 +106,9 @@ function runGLNNE(inputText) {
   if (tokens.length === 0) return "Anlaşılamadı.";
 
   const outVectors = transformer(tokens);
-  return `Transformer sonucu: ${JSON.stringify(outVectors, null, 2)}`;
+  return decodeOutput(outVectors);
 }
+
 // ======== Vektörden Cevap Üret (decode) ========
 function decodeOutput(outputVectors) {
   // İlk vektörün ilk birkaç elemanına göre örnek cevap üretelim
