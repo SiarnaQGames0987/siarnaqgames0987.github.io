@@ -47,7 +47,6 @@ export function runGLNNE(text) {
   if (math) return math;
 
   const tokens = tokenize(text);
-  const tokens = tokenize(text);
   const inputVec = encodeInput(tokens);
 
   let bestSim = -1;
