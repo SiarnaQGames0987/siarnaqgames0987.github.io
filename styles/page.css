@@ -31,6 +31,6 @@ button{
   color:white;
   border-radius: 8px;
   padding: 8px;
-  text-decoration: none;
+  border: none;
 }
 
