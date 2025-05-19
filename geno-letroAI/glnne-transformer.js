@@ -74,6 +74,3 @@ export function runGLNNE(text) {
   if (bestSim < 0.85) return "Bu konuda bir şey öğrenmedim.";
   return `${bestAnswer} (benzerlik: ${bestSim.toFixed(2)})`;
 }
-  if (bestSim < 0.90) return "Bu konuda bir şey öğrenmedim.";
-  return `${bestAnswer} (benzerlik: ${bestSim.toFixed(2)})`;
-}
