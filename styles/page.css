@@ -26,4 +26,11 @@ a:visited {
 a:active {
   color: white;
 }
+a:button{
+  background-color: var(--themecolor);
+  color:white;
+  border-radius: 8px;
+  padding: 8px;
+  text-decoration: none;
+}
 
