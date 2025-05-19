@@ -4,60 +4,30 @@
   <meta charset="UTF-8">
   <title>GLNNE Transformer AI</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background-color: #f8f8f8;
-      padding: 30px;
-    }
-    h1 {
-      color: #333;
-    }
-    #chat {
-      margin-top: 20px;
-      background-color: #fff;
-      border: 1px solid #ccc;
-      padding: 15px;
-      height: 300px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-    }
-    input[type="text"] {
-      width: 70%;
-      padding: 10px;
-      font-size: 16px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-    }
+    body { font-family: sans-serif; background-color: #f8f8f8; padding: 30px; }
+    h1 { color: #333; }
+    #chat { margin-top: 20px; background-color: #fff; border: 1px solid #ccc; padding: 15px; height: 300px; overflow-y: auto; white-space: pre-wrap; }
+    input[type="text"] { width: 70%; padding: 10px; font-size: 16px; }
+    button { padding: 10px 20px; font-size: 16px; }
   </style>
 </head>
 <body>
-
   <h1>🤖 GLNNE Transformer AI</h1>
-
   <div>
     <input type="text" id="userInput" placeholder="Mesajınızı yazın..." />
     <button onclick="handleSend()">Gönder</button>
   </div>
-
   <div id="chat"></div>
-
-  <script src="glnne-transformer.js"></script>
   <script type="module">
-  import { loadData, runGLNNE } from './glnne-transformer.js';
+    import { loadData, runGLNNE } from './glnne-transformer.js';
+    await loadData();
 
-  await loadData();
-
-  window.handleSend = () => {
-    const input = document.getElementById("userInput").value.trim();
-    const output = runGLNNE(input);
-    document.getElementById("chat").innerText += `👤 Sen: ${input}\n🤖 GLNNE: ${output}\n\n`;
-    document.getElementById("userInput").value = "";
-  };
-</script>
-
-
+    window.handleSend = () => {
+      const input = document.getElementById("userInput").value.trim();
+      const output = runGLNNE(input);
+      document.getElementById("chat").innerText += `👤 Sen: ${input}\n🤖 GLNNE: ${output}\n\n`;
+      document.getElementById("userInput").value = "";
+    };
+  </script>
 </body>
 </html>
-
