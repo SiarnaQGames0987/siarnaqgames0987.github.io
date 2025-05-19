@@ -27,7 +27,7 @@ a:active {
   color: white;
 }
 button{
-  background-color: var(--themecolor);
+  background-color: #2468A0
   color:white;
   border-radius: 8px;
   padding: 8px;
