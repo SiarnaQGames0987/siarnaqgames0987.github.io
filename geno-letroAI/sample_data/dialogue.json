@@ -2,5 +2,10 @@
   { "input": "merhaba", "output": "selam!" },
   { "input": "nasılsın", "output": "iyiyim, sen nasılsın?" },
   { "input": "ne yapıyorsun", "output": "seninle konuşuyorum." },
-  { "input": "görüşürüz", "output": "görüşmek üzere!" }
+  { "input": "görüşürüz", "output": "görüşmek üzere!" },
+  { "input": "güneşin kütlesi kaçtır", "output": "Güneş'in kütlesi yaklaşık 1.989 × 10^30 kg'dır." },
+  { "input": "güneş", "output": "Güneş; Güneş Sistemi'nin merkezinde olan, orta büyüklükte ve orta yaşta olan bir yıldızdır. Yüzey sıcaklığı yaklaşık 6000°C'dir. Yaklaşık 4,5 milyar yaşındadır." },
+  { "input": "kütle", "output": "Kütle, bir maddenin tanecik miktarıdır. Gram, kilogram, ton ile ölçülür, ancak daha düşük (örneğin: miligram, mikrogram, nanogram gibi) ölçü birimleri de vardır." },
+  { "input": "elma nasıl yazılır", "output": "'Elma' bu şekilde yazılır: e-l-m-a." },
+  { "input": "merhaba 4 + 3", "output": "selam! Ayrıca 4 + 3 = 7" }
 ]
