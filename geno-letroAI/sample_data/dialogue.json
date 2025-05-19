@@ -1,1 +1,7 @@
+[
+  { "input": "merhaba", "output": "selam!" },
+  { "input": "nasılsın", "output": "iyiyim, sen nasılsın?" },
+  { "input": "ne yapıyorsun", "output": "seninle konuşuyorum." },
+  { "input": "görüşürüz", "output": "görüşmek üzere!" }
+]
 
