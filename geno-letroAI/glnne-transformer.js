@@ -60,7 +60,7 @@ export function runGLNNE(text) {
   const inputVec = encodeInput(tokens);
 
   let bestSim = -1;
-  let bestAnswer = "Bunu anlayamadım.";
+  let bestAnswer = "Bu konuda bir şey öğrenmedim.";
 
   for (let pair of dialogue) {
     const sim = cosineSimilarity(inputVec, pair.vector);
@@ -70,6 +70,10 @@ export function runGLNNE(text) {
     }
   }
 
+  // Eşik kontrolü (daha doğru eşleşme)
+  if (bestSim < 0.85) return "Bu konuda bir şey öğrenmedim.";
+  return `${bestAnswer} (benzerlik: ${bestSim.toFixed(2)})`;
+}
   if (bestSim < 0.90) return "Bu konuda bir şey öğrenmedim.";
   return `${bestAnswer} (benzerlik: ${bestSim.toFixed(2)})`;
 }
