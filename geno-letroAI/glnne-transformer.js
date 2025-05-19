@@ -1,123 +1,125 @@
-// ======== Ayarlar ========
+// glnne-transformer.js
+
+let embeddings = {}; // embeddings.json'dan yüklenecek
+let dialogue = [];   // sample_data/dialogue.json'dan yüklenecek
 const EMBEDDING_SIZE = 8;
-const SEQ_LENGTH = 10;
 
-// ======== Yardımcı Fonksiyonlar ========
+// ========== YARDIMCI FONKSİYONLAR ==========
 
-// Rastgele sayı aralığı (-0.5 ila +0.5)
-function rand() {
-  return Math.random() - 0.5;
-}
-
-// Softmax
 function softmax(arr) {
   const max = Math.max(...arr);
   const exps = arr.map(x => Math.exp(x - max));
-  const sum = exps.reduce((a, b) => a + b);
+  const sum = exps.reduce((a, b) => a + b, 0);
   return exps.map(x => x / sum);
 }
 
-// Matris çarpımı
-function dot(a, b) {
-  let result = new Array(a.length).fill(0);
+function cosineSimilarity(a, b) {
+  let dot = 0, normA = 0, normB = 0;
   for (let i = 0; i < a.length; i++) {
-    result[i] = 0;
-    for (let j = 0; j < b.length; j++) {
-      result[i] += a[i][j] * b[j];
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+function addVectors(a, b) {
+  return a.map((v, i) => v + b[i]);
+}
+
+function relu(v) {
+  return v.map(x => Math.max(0, x));
+}
+
+function averageVector(vectors) {
+  const result = new Array(EMBEDDING_SIZE).fill(0);
+  for (let v of vectors) {
+    for (let i = 0; i < EMBEDDING_SIZE; i++) {
+      result[i] += v[i];
     }
   }
-  return result;
+  return result.map(x => x / vectors.length);
 }
 
-// ======== Tokenizer (basit) ========
-const vocab = {
-  "merhaba": 0, "nasılsın": 1, "iyi": 2, "kötü": 3, "değilim": 4,
-  "selam": 5, "ne": 6, "yapıyorsun": 7, "?": 8, ".": 9
-};
-
-function tokenize(text) {
-  const words = text.toLowerCase().split(" ");
-  return words.map(w => vocab[w] ?? -1).filter(i => i !== -1);
-}
-
-// ======== Embedding Vektörleri ========
-const embeddings = Array.from({ length: Object.keys(vocab).length }, () =>
-  Array.from({ length: EMBEDDING_SIZE }, rand)
-);
-
-// ======== Positional Encoding (sinüs tabanlı) ========
-function positionalEncoding(seqLen, dim) {
-  let pe = Array.from({ length: seqLen }, () => new Array(dim).fill(0));
-  for (let pos = 0; pos < seqLen; pos++) {
-    for (let i = 0; i < dim; i++) {
-      if (i % 2 === 0)
-        pe[pos][i] = Math.sin(pos / Math.pow(10000, i / dim));
-      else
-        pe[pos][i] = Math.cos(pos / Math.pow(10000, (i - 1) / dim));
+function positionalEncoding(length) {
+  const pe = [];
+  for (let pos = 0; pos < length; pos++) {
+    const vec = [];
+    for (let i = 0; i < EMBEDDING_SIZE; i++) {
+      vec.push(i % 2 === 0
+        ? Math.sin(pos / Math.pow(10000, i / EMBEDDING_SIZE))
+        : Math.cos(pos / Math.pow(10000, (i - 1) / EMBEDDING_SIZE))
+      );
     }
+    pe.push(vec);
   }
   return pe;
 }
 
-// ======== Transformer Bloğu (tek katman) ========
-function transformer(inputTokens) {
-  // 1. Embedding + Positional Encoding
-  const embedded = inputTokens.map(t => embeddings[t]);
-  const pe = positionalEncoding(embedded.length, EMBEDDING_SIZE);
-  const inputVecs = embedded.map((vec, i) =>
-    vec.map((v, j) => v + pe[i][j])
-  );
+// ========== EMBEDDING + ENCODER BLOĞU ==========
 
-  // 2. Self-Attention (tek başına başlatma)
-  const Q = inputVecs;
-  const K = inputVecs;
-  const V = inputVecs;
+function encodeInput(tokens) {
+  let embedded = tokens.map(t => embeddings[t] || new Array(EMBEDDING_SIZE).fill(0));
+  let pe = positionalEncoding(tokens.length);
+  let added = embedded.map((vec, i) => addVectors(vec, pe[i]));
 
-  const attentionScores = Q.map((q, i) => {
-    return K.map((k, j) => {
-      let dotProd = q.reduce((sum, val, idx) => sum + val * k[idx], 0);
-      return dotProd / Math.sqrt(EMBEDDING_SIZE); // ölçekleme
-    });
-  });
+  // Self-attention (tek head, kendi embedding'i ile dot)
+  const attention = added.map(q => {
+    const scores = added.map(k => cosineSimilarity(q, k));
+    const weights = softmax(scores);
+    const context = new Array(EMBEDDING_SIZE).fill(0);
 
-  const attentionWeights = attentionScores.map(row => softmax(row));
-
-  const attentionOutput = attentionWeights.map((row, i) => {
-    let outVec = new Array(EMBEDDING_SIZE).fill(0);
-    for (let j = 0; j < row.length; j++) {
+    for (let j = 0; j < weights.length; j++) {
       for (let k = 0; k < EMBEDDING_SIZE; k++) {
-        outVec[k] += row[j] * V[j][k];
+        context[k] += weights[j] * added[j][k];
       }
     }
-    return outVec;
+
+    return context;
   });
 
-  // 3. Basit Feed-Forward Katmanı (örnek amaçlı)
-  const output = attentionOutput.map(vec =>
-    vec.map(v => Math.max(0, v * 0.8 + 0.1)) // ReLU
-  );
+  // FeedForward layer
+  const ffn = attention.map(vec => relu(vec.map(x => x * 1.1 + 0.1)));
 
-  return output;
+  return averageVector(ffn);
 }
 
-// ======== Çalıştırıcı Fonksiyon ========
-function runGLNNE(inputText) {
-  const tokens = tokenize(inputText);
-  if (tokens.length === 0) return "Anlaşılamadı.";
+// ========== YÜKLEME ==========
 
-  const outVectors = transformer(tokens);
-  return decodeOutput(outVectors);
+export async function loadData() {
+  const embRes = await fetch("embeddings.json");
+  embeddings = await embRes.json();
+
+  const dlgRes = await fetch("sample_data/dialogue.json");
+  const rawData = await dlgRes.json();
+
+  dialogue = rawData.map(item => {
+    const tokens = item.input.toLowerCase().split(" ");
+    const encoded = encodeInput(tokens);
+    return {
+      input: item.input,
+      output: item.output,
+      vector: encoded
+    };
+  });
 }
 
-// ======== Vektörden Cevap Üret (decode) ========
-function decodeOutput(outputVectors) {
-  // İlk vektörün ilk birkaç elemanına göre örnek cevap üretelim
-  const avg = outputVectors[0].reduce((a, b) => a + b, 0) / outputVectors[0].length;
+// ========== ANA ÇALIŞTIRICI ==========
 
-  if (avg > 0.8) return "Harika, seninle konuşmak güzel!";
-  if (avg > 0.4) return "İyi gidiyoruz!";
-  if (avg > 0.1) return "Hımm, ilginç bir şey söyledin.";
-  return "Sanırım seni tam anlayamadım.";
+export function runGLNNE(userText) {
+  const tokens = userText.toLowerCase().split(" ");
+  const inputVec = encodeInput(tokens);
+
+  let bestSim = -1;
+  let bestAnswer = "Bunu henüz öğrenmedim.";
+
+  for (let pair of dialogue) {
+    const sim = cosineSimilarity(inputVec, pair.vector);
+    if (sim > bestSim) {
+      bestSim = sim;
+      bestAnswer = pair.output;
+    }
+  }
+
+  return bestAnswer + ` (benzerlik: ${bestSim.toFixed(2)})`;
 }
-
-
