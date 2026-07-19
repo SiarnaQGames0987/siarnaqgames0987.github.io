@@ -1,0 +1,367 @@
+name: SiarnaQ AutoMod
+
+on:
+  discussion_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  discussions: write
+
+jobs:
+  moderate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Moderate discussion comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = context.payload.comment;
+            const author = comment.user?.login ?? "unknown";
+
+            // Botların kendi yorumlarını kontrol etmez.
+            if (
+              comment.user?.type === "Bot" ||
+              author.toLowerCase() === "github-actions[bot]"
+            ) {
+              console.log("Bot yorumu atlandı.");
+              return;
+            }
+
+            const originalText = comment.body ?? "";
+            const lowerText = originalText.toLocaleLowerCase("tr-TR");
+
+            // Noktalama ve bazı harf değiştirme yöntemlerini sadeleştirir.
+            // Örnek: f.u.c.k, f*ck, b1tch gibi yazımları daha kolay yakalar.
+            const normalizedText = lowerText
+              .normalize("NFKD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .replace(/0/g, "o")
+              .replace(/1/g, "i")
+              .replace(/3/g, "e")
+              .replace(/4/g, "a")
+              .replace(/5/g, "s")
+              .replace(/7/g, "t")
+              .replace(/@/g, "a")
+              .replace(/\$/g, "s")
+              .replace(/[|!]/g, "i")
+              .replace(/[^a-zçğıöşü0-9:/._\-\s]/g, " ")
+              .replace(/\s+/g, " ")
+              .trim();
+
+            /*
+             * Bağımsız kelime olarak aranacak ifadeler.
+             * "cum" gibi kısa ifadeler başka kelimelerin içindeyken yakalanmaz.
+             */
+            const bannedWords = [
+              // İngilizce ağır küfür ve hakaretler
+              "fuck",
+              "fucker",
+              "fucking",
+              "motherfucker",
+              "motherfucking",
+              "bitch",
+              "bitches",
+              "bastard",
+              "asshole",
+              "dickhead",
+              "dumbass",
+              "jackass",
+              "bullshit",
+              "shithead",
+              "shit",
+              "cunt",
+              "whore",
+              "slut",
+              "hooker",
+              "prick",
+              "wanker",
+              "retard",
+              "idiot",
+              "moron",
+              "loser",
+              "scumbag",
+              "dipshit",
+              "crap",
+              "piss",
+              "cock",
+              "dick",
+              "pussy",
+              "cum",
+              "porn",
+              "porno",
+              "nude",
+              "nudes",
+
+              // Türkçe küfür ve ağır hakaretler
+              "amk",
+              "aq",
+              "mk",
+              "siktir",
+              "sikerim",
+              "sikeyim",
+              "sikik",
+              "sik",
+              "orospu",
+              "kahpe",
+              "kaltak",
+              "pezevenk",
+              "piç",
+              "pic",
+              "ibne",
+              "gavat",
+              "yavşak",
+              "yavsak",
+              "şerefsiz",
+              "serefsiz",
+              "haysiyetsiz",
+              "namussuz",
+              "gerizekalı",
+              "gerizekali",
+              "salak",
+              "aptal",
+              "mal",
+              "dangalak",
+              "embesil",
+              "ahmak",
+              "ezik",
+              "bok",
+              "boktan",
+              "göt",
+              "got",
+              "götveren",
+              "gotveren",
+              "çük",
+              "cuk",
+              "yarak",
+              "taşak",
+              "tasak",
+              "meme"
+            ];
+
+            // Cümlenin herhangi bir yerinde aranacak hakaret/tehdit kalıpları.
+            const bannedPhrases = [
+              "fuck you",
+              "go fuck yourself",
+              "son of a bitch",
+              "piece of shit",
+              "kill yourself",
+              "kys",
+              "nobody likes you",
+              "you are worthless",
+              "you are useless",
+              "i hate you",
+              "screw you",
+              "shut the fuck up",
+
+              "ananı sikerim",
+              "anani sikerim",
+              "amına koyarım",
+              "amina koyarim",
+              "amına koyayım",
+              "amina koyayim",
+              "seni sikerim",
+              "geber git",
+              "öl git",
+              "ol git",
+              "kendini öldür",
+              "kendini oldur",
+              "kimse seni sevmiyor",
+              "senden nefret ediyorum",
+              "seni bulacağım",
+              "seni bulacagim",
+              "adresini bulurum"
+            ];
+
+            // Reklam, kumar, dolandırıcılık ve şüpheli bağlantı parçaları.
+            const blockedLinkParts = [
+              "discord.gg/",
+              "discord.com/invite/",
+              "bit.ly/",
+              "tinyurl.com/",
+              "t.me/",
+              "telegram.me/",
+              "wa.me/",
+              "cutt.ly/",
+              "rb.gy/",
+              "goo.su/",
+              "linktr.ee/",
+
+              "/casino",
+              "casino-",
+              "onlinecasino",
+              "betting",
+              "sportsbook",
+              "bahis",
+              "casino",
+              "jackpot",
+              "roulette",
+              "rulet",
+              "blackjack",
+              "slotbonus",
+              "freebet",
+              "bedava bonus",
+              "deneme bonusu",
+              "yatırımsız bonus",
+              "yatirimsiz bonus",
+              "hoş geldin bonusu",
+              "hos geldin bonusu",
+
+              "free robux",
+              "bedava robux",
+              "free vbucks",
+              "bedava vbucks",
+              "free nitro",
+              "bedava nitro",
+              "gift card generator",
+              "hesabını doğrula",
+              "hesabini dogrula",
+              "şifreni gir",
+              "sifreni gir",
+              "claim your prize",
+              "you won a prize",
+              "click here to win",
+              "earn money fast",
+              "make money fast"
+            ];
+
+            const escapeRegex = (value) =>
+              value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+            // Kelimeyi başka kelimelerin içinde değil, bağımsız biçimde arar.
+            const matchedWord = bannedWords.find((word) => {
+              const pattern = new RegExp(
+                `(^|[^a-zçğıöşü0-9_])${escapeRegex(word)}(?=$|[^a-zçğıöşü0-9_])`,
+                "iu"
+              );
+
+              return pattern.test(normalizedText);
+            });
+
+            const matchedPhrase = bannedPhrases.find((phrase) =>
+              normalizedText.includes(phrase)
+            );
+
+            const matchedBlockedLink = blockedLinkParts.find((part) =>
+              lowerText.includes(part)
+            );
+
+            // URL sayısı
+            const links =
+              originalText.match(
+                /(?:https?:\/\/|www\.)[^\s<>"')\]]+/gi
+              ) ?? [];
+
+            const tooManyLinks = links.length >= 3;
+
+            // @kullanıcı etiketleme sayısı
+            const mentions =
+              originalText.match(/(^|\s)@[a-z0-9-]+/gi) ?? [];
+
+            const tooManyMentions = mentions.length >= 5;
+
+            // Aynı karakterin sekiz veya daha fazla kez tekrarı:
+            // AAAAAAAAA, !!!!!!!! gibi
+            const repeatedCharacters =
+              /(.)\1{7,}/su.test(originalText);
+
+            // Aynı kelimenin altı veya daha fazla kez art arda yazılması.
+            const repeatedWords =
+              /\b([\p{L}\p{N}_]{2,})\b(?:[\s,.!?_-]+\1\b){5,}/iu.test(
+                originalText
+              );
+
+            // Uzun metinlerde aşırı büyük harf kullanımı.
+            const letters = originalText.match(/\p{L}/gu) ?? [];
+            const uppercaseLetters =
+              originalText.match(/\p{Lu}/gu) ?? [];
+
+            const excessiveUppercase =
+              letters.length >= 20 &&
+              uppercaseLetters.length / letters.length >= 0.75;
+
+            // Aşırı uzun yorum.
+            const excessiveLength = originalText.length > 4000;
+
+            const reasons = [];
+
+            if (matchedWord) {
+              reasons.push("uygunsuz kelime");
+            }
+
+            if (matchedPhrase) {
+              reasons.push("hakaret veya tehdit kalıbı");
+            }
+
+            if (matchedBlockedLink) {
+              reasons.push("yasaklı veya şüpheli bağlantı");
+            }
+
+            if (tooManyLinks) {
+              reasons.push("çok fazla bağlantı");
+            }
+
+            if (tooManyMentions) {
+              reasons.push("çok fazla kullanıcı etiketi");
+            }
+
+            if (repeatedCharacters) {
+              reasons.push("karakter tekrarı");
+            }
+
+            if (repeatedWords) {
+              reasons.push("kelime tekrarı");
+            }
+
+            if (excessiveUppercase) {
+              reasons.push("aşırı büyük harf");
+            }
+
+            if (excessiveLength) {
+              reasons.push("aşırı uzun yorum");
+            }
+
+            if (reasons.length === 0) {
+              console.log(`Yorum temiz. Kullanıcı: ${author}`);
+              return;
+            }
+
+            console.log(
+              `Yorum filtreye takıldı. Kullanıcı: ${author}. Sebepler: ${reasons.join(", ")}`
+            );
+
+            const warningBody =
+              `⚠️ **SiarnaQ AutoMod**\n\n` +
+              `Bu yorum otomatik moderasyon sistemine takıldı.\n\n` +
+              `**Sebep:** ${reasons.join(", ")}.\n\n` +
+              `Yorum bir moderatör tarafından incelenebilir. Lütfen küfür, hakaret, tehdit, reklam ve spam içermeyen bir dil kullanın.`;
+
+            await github.graphql(
+              `
+                mutation(
+                  $discussionId: ID!
+                  $replyToId: ID!
+                  $body: String!
+                ) {
+                  addDiscussionComment(
+                    input: {
+                      discussionId: $discussionId
+                      replyToId: $replyToId
+                      body: $body
+                    }
+                  ) {
+                    comment {
+                      id
+                    }
+                  }
+                }
+              `,
+              {
+                discussionId: context.payload.discussion.node_id,
+                replyToId: comment.node_id,
+                body: warningBody
+              }
+            );
+
+            console.log("AutoMod uyarısı gönderildi.");
