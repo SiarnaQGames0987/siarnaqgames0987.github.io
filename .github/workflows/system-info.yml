@@ -1,0 +1,122 @@
+name: System Info
+
+on:
+  discussion_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  discussions: write
+
+jobs:
+  blocked-message:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Process blocked command
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = context.payload.comment;
+            const discussion = context.payload.discussion;
+
+            const author = comment.user?.login ?? "";
+            const body = (comment.body ?? "").trim();
+
+            // Komutu yalnızca repo sahibi kullanabilir.
+            const allowedUsers = [
+              "SiarnaQGames0987"
+            ];
+
+            if (!allowedUsers.includes(author)) {
+              console.log(`Yetkisiz kullanıcı atlandı: ${author}`);
+              return;
+            }
+
+            /*
+             * Kabul edilen biçim:
+             * /blocked @KullaniciAdi
+             */
+            const match = body.match(
+              /^\/blocked\s+@([a-zA-Z0-9-]{1,39})\s*$/i
+            );
+
+            if (!match) {
+              console.log("System Info komutu bulunamadı.");
+              return;
+            }
+
+            const blockedUser = match[1];
+
+            // GitHub kullanıcı adları tireyle başlayamaz veya bitemez.
+            if (
+              blockedUser.startsWith("-") ||
+              blockedUser.endsWith("-")
+            ) {
+              console.log("Geçersiz GitHub kullanıcı adı.");
+              return;
+            }
+
+            const systemMessage =
+              `ℹ️ **System Info**\n\n` +
+              `@${blockedUser} has been blocked from the comments section.`;
+
+            /*
+             * System Info mesajını bağımsız yorum olarak gönderir.
+             * Böylece komut silinince mesaj kaybolmaz.
+             */
+            const result = await github.graphql(
+              `
+                mutation(
+                  $discussionId: ID!
+                  $body: String!
+                ) {
+                  addDiscussionComment(
+                    input: {
+                      discussionId: $discussionId
+                      body: $body
+                    }
+                  ) {
+                    comment {
+                      id
+                    }
+                  }
+                }
+              `,
+              {
+                discussionId: discussion.node_id,
+                body: systemMessage
+              }
+            );
+
+            console.log(
+              `System Info mesajı gönderildi: ${blockedUser}`
+            );
+
+            /*
+             * /blocked komutunu görünür bırakmamak için siler.
+             */
+            try {
+              await github.graphql(
+                `
+                  mutation($id: ID!) {
+                    deleteDiscussionComment(
+                      input: {
+                        id: $id
+                      }
+                    ) {
+                      clientMutationId
+                    }
+                  }
+                `,
+                {
+                  id: comment.node_id
+                }
+              );
+
+              console.log("Yönetim komutu silindi.");
+            } catch (error) {
+              console.log(
+                `Komut silinemedi: ${error.message}`
+              );
+            }
