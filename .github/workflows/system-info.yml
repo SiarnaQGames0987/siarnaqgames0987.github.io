@@ -9,11 +9,11 @@ permissions:
   discussions: write
 
 jobs:
-  blocked-message:
+  system-info:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Process blocked command
+      - name: Process System Info commands
         uses: actions/github-script@v7
         with:
           script: |
@@ -21,9 +21,25 @@ jobs:
             const discussion = context.payload.discussion;
 
             const author = comment.user?.login ?? "";
+            const authorType = comment.user?.type ?? "";
             const body = (comment.body ?? "").trim();
 
-            // Komutu yalnızca repo sahibi kullanabilir.
+            /*
+             * Botun oluşturduğu mesajlar workflow'u yeniden tetikler.
+             * Bu kontrol sonsuz döngüyü önler.
+             */
+            if (
+              authorType === "Bot" ||
+              author.toLowerCase() === "github-actions[bot]"
+            ) {
+              console.log("Bot yorumu atlandı.");
+              return;
+            }
+
+            /*
+             * System Info komutlarını yalnızca listedeki
+             * yöneticiler kullanabilir.
+             */
             const allowedUsers = [
               "SiarnaQGames0987"
             ];
@@ -34,89 +50,158 @@ jobs:
             }
 
             /*
-             * Kabul edilen biçim:
-             * /blocked @KullaniciAdi
+             * Yeni bağımsız Discussion yorumu gönderir.
              */
-            const match = body.match(
-              /^\/blocked\s+@([a-zA-Z0-9-]{1,39})\s*$/i
-            );
-
-            if (!match) {
-              console.log("System Info komutu bulunamadı.");
-              return;
-            }
-
-            const blockedUser = match[1];
-
-            // GitHub kullanıcı adları tireyle başlayamaz veya bitemez.
-            if (
-              blockedUser.startsWith("-") ||
-              blockedUser.endsWith("-")
-            ) {
-              console.log("Geçersiz GitHub kullanıcı adı.");
-              return;
-            }
-
-            const systemMessage =
-              `ℹ️ **System Info**\n\n` +
-              `@${blockedUser} has been blocked from the comments section.`;
-
-            /*
-             * System Info mesajını bağımsız yorum olarak gönderir.
-             * Böylece komut silinince mesaj kaybolmaz.
-             */
-            const result = await github.graphql(
-              `
-                mutation(
-                  $discussionId: ID!
-                  $body: String!
-                ) {
-                  addDiscussionComment(
-                    input: {
-                      discussionId: $discussionId
-                      body: $body
-                    }
-                  ) {
-                    comment {
-                      id
-                    }
-                  }
-                }
-              `,
-              {
-                discussionId: discussion.node_id,
-                body: systemMessage
-              }
-            );
-
-            console.log(
-              `System Info mesajı gönderildi: ${blockedUser}`
-            );
-
-            /*
-             * /blocked komutunu görünür bırakmamak için siler.
-             */
-            try {
-              await github.graphql(
+            async function sendSystemMessage(message) {
+              const result = await github.graphql(
                 `
-                  mutation($id: ID!) {
-                    deleteDiscussionComment(
+                  mutation(
+                    $discussionId: ID!
+                    $body: String!
+                  ) {
+                    addDiscussionComment(
                       input: {
-                        id: $id
+                        discussionId: $discussionId
+                        body: $body
                       }
                     ) {
-                      clientMutationId
+                      comment {
+                        id
+                      }
                     }
                   }
                 `,
                 {
-                  id: comment.node_id
+                  discussionId: discussion.node_id,
+                  body: message
                 }
               );
 
-              console.log("Yönetim komutu silindi.");
-            } catch (error) {
-              console.log(
-                `Komut silinemedi: ${error.message}`
-              );
+              return result.addDiscussionComment.comment.id;
             }
+
+            /*
+             * Yazılan yönetim komutunu siler.
+             */
+            async function deleteCommand() {
+              try {
+                await github.graphql(
+                  `
+                    mutation($id: ID!) {
+                      deleteDiscussionComment(
+                        input: {
+                          id: $id
+                        }
+                      ) {
+                        clientMutationId
+                      }
+                    }
+                  `,
+                  {
+                    id: comment.node_id
+                  }
+                );
+
+                console.log("Yönetim komutu silindi.");
+              } catch (error) {
+                console.log(
+                  `Yönetim komutu silinemedi: ${error.message}`
+                );
+              }
+            }
+
+            /*
+             * ─────────────────────────────────────────────
+             * /blocked @KullaniciAdi
+             * ─────────────────────────────────────────────
+             */
+
+            const blockedMatch = body.match(
+              /^\/blocked\s+@([a-zA-Z0-9-]{1,39})\s*$/i
+            );
+
+            if (blockedMatch) {
+              const blockedUser = blockedMatch[1];
+
+              /*
+               * GitHub kullanıcı adları tireyle
+               * başlayamaz veya bitemez.
+               */
+              if (
+                blockedUser.startsWith("-") ||
+                blockedUser.endsWith("-")
+              ) {
+                console.log("Geçersiz GitHub kullanıcı adı.");
+                return;
+              }
+
+              const blockedMessage =
+                `ℹ️ **System Info**\n\n` +
+                `@${blockedUser} has been blocked from the comments section.`;
+
+              await sendSystemMessage(blockedMessage);
+              await deleteCommand();
+
+              console.log(
+                `Blocked mesajı gönderildi: ${blockedUser}`
+              );
+
+              return;
+            }
+
+            /*
+             * ─────────────────────────────────────────────
+             * /anno Duyuru metni
+             * ─────────────────────────────────────────────
+             *
+             * Örnek:
+             * /anno Yeni AutoMod sistemi devreye alındı.
+             */
+
+            const announcementMatch = body.match(
+              /^\/anno\s+([\s\S]+)$/i
+            );
+
+            if (announcementMatch) {
+              const announcement =
+                announcementMatch[1].trim();
+
+              if (!announcement) {
+                console.log("Duyuru metni boş.");
+                return;
+              }
+
+              /*
+               * Aşırı uzun veya yanlışlıkla devasa
+               * bir duyuru gönderilmesini önler.
+               */
+              if (announcement.length > 3000) {
+                console.log(
+                  "Duyuru çok uzun. En fazla 3000 karakter olabilir."
+                );
+                return;
+              }
+
+              const announcementMessage =
+                `📢 **Official Announcement**\n\n` +
+                `Official Announcement by **Developium-233 (SiarnaQGames0987):**\n\n` +
+                `${announcement}`;
+
+              await sendSystemMessage(
+                announcementMessage
+              );
+
+              await deleteCommand();
+
+              console.log(
+                `Resmî duyuru gönderildi: ${announcement}`
+              );
+
+              return;
+            }
+
+            /*
+             * Mesaj hiçbir System Info komutuyla eşleşmediyse
+             * işlem yapılmaz.
+             */
+            console.log("System Info komutu bulunamadı.");
